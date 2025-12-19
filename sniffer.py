@@ -7,6 +7,8 @@ FORTNITE_PORT_RANGE = range(12000,65000)
 PROCESS_NAME = "FortniteClient-Win64-Shipping.exe"
 INTERFACE = "Ethernet"
 
+_IPINFO_CACHE = {}
+
 def is_local_ip(ip):
     try:
         o=ipaddress.ip_address(ip); return o.is_private or o.is_loopback or o.is_link_local
@@ -14,10 +16,18 @@ def is_local_ip(ip):
         return False
 
 def get_ip_info(ip):
+    """Cached IP -> region lookup."""
+    v = _IPINFO_CACHE.get(ip)
+    if v is not None:
+        return v
     try:
-        d=requests.get(f"https://ipinfo.io/{ip}/json").json(); return f"{d.get('country')} - {d.get('region')} ({d.get('city')})"
-    except:
-        return "Unknown"
+        r = requests.get(f"https://ipinfo.io/{ip}/json", timeout=3)
+        d = r.json()
+        val = f"{d.get('country')} - {d.get('region')} ({d.get('city')})"
+    except Exception:
+        val = "Unknown"
+    _IPINFO_CACHE[ip] = val
+    return val
 
 def get_ports_for_process(name):
     p=set(); n=name.lower()
