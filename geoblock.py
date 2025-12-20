@@ -1,4 +1,4 @@
-import ipaddress, signal, os, tarfile
+import ipaddress, signal, os
 import geoip2.database
 from pydivert import WinDivert
 from urllib.request import urlretrieve
@@ -105,7 +105,6 @@ def block_countries_for_process():
                             w.send(pkt)
                             continue
 
-                        src_port = getattr(pkt, 'src_port', None)
                         dst_port = getattr(pkt, 'dst_port', None)
 
                         # Check if destination port is greater than MIN_DST_PORT
