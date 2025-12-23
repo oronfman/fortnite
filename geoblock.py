@@ -1,4 +1,5 @@
-import ipaddress, signal, os
+import ipaddress, signal, os, time
+from datetime import datetime, timedelta
 import geoip2.database
 from pydivert import WinDivert
 from urllib.request import urlretrieve
@@ -20,13 +21,34 @@ def is_local_ip(ip):
         return False
 
 
-def download_geoip_db():
-    """Download GeoLite2 Country database if not present."""
-    if os.path.exists(GEOIP_DB_FILE):
-        print(f"✓ GeoIP database found: {GEOIP_DB_FILE}")
+def is_db_outdated():
+    """Check if GeoIP database is older than a month."""
+    if not os.path.exists(GEOIP_DB_FILE):
         return True
     
-    print("⬇ Downloading GeoLite2-Country database...")
+    file_modified_time = os.path.getmtime(GEOIP_DB_FILE)
+    file_age = datetime.now() - datetime.fromtimestamp(file_modified_time)
+    
+    # Check if older than 30 days
+    if file_age > timedelta(days=30):
+        print(f"⚠ GeoIP database is {file_age.days} days old (last updated: {datetime.fromtimestamp(file_modified_time).strftime('%Y-%m-%d')})")
+        return True
+    
+    return False
+
+
+def download_geoip_db():
+    """Download GeoLite2 Country database if not present or outdated."""
+    if os.path.exists(GEOIP_DB_FILE) and not is_db_outdated():
+        file_modified_time = os.path.getmtime(GEOIP_DB_FILE)
+        print(f"✓ GeoIP database found: {GEOIP_DB_FILE} (age: {(datetime.now() - datetime.fromtimestamp(file_modified_time)).days} days)")
+        return True
+    
+    if os.path.exists(GEOIP_DB_FILE):
+        print("⬇ Updating GeoLite2-Country database...")
+    else:
+        print("⬇ Downloading GeoLite2-Country database...")
+    
     # Using a mirror that doesn't require license key
     url = "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb"
     
