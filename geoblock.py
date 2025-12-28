@@ -10,7 +10,8 @@ CURRENT_DIVERT = None
 _BLOCK_COUNTRIES = {"GB", "DE"}  # ISO country codes to block
 _IP_COUNTRY_CACHE = {}
 GEOIP_DB_FILE = 'GeoLite2-Country.mmdb'
-MIN_DST_PORT = 10000  # Only monitor destination ports above this value
+MIN_DST_PORT = 15000  # Only monitor destination ports above this value
+MAX_DST_PORT = 15999  # Only monitor destination ports below this value
 
 
 def is_local_ip(ip):
@@ -107,7 +108,7 @@ def block_countries_for_process():
     """Intercept outbound IP packets and drop those whose destination country is blocked for destination ports > MIN_DST_PORT."""
     global CURRENT_DIVERT
     print("🌍 Starting GeoBlock...")
-    print(f"📡 Monitoring outbound traffic on destination ports > {MIN_DST_PORT}")
+    print(f"📡 Monitoring outbound traffic on destination ports {MIN_DST_PORT}-{MAX_DST_PORT}")
     print(f"🚫 Blocking countries: {', '.join(_BLOCK_COUNTRIES)}\n")
 
     try:
@@ -129,8 +130,8 @@ def block_countries_for_process():
 
                         dst_port = getattr(pkt, 'dst_port', None)
 
-                        # Check if destination port is greater than MIN_DST_PORT
-                        if dst_port is None or dst_port <= MIN_DST_PORT:
+                        # Check if destination port is within the monitored range
+                        if dst_port is None or dst_port <= MIN_DST_PORT or dst_port > MAX_DST_PORT:
                             w.send(pkt)
                             continue
 
