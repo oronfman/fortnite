@@ -1,0 +1,25 @@
+{
+    "bean": {
+        "_v": 0,
+        "addr": "51.44.7.9",
+        "method": "chacha20-ietf-poly1305",
+        "name": "paris",
+        "pass": "NYkeqfS2oVYD",
+        "port": 8388,
+        "stream": {
+            "ed_len": 0,
+            "insecure": false,
+            "mux_s": 0,
+            "net": "tcp"
+        },
+        "uot": 0
+    },
+    "gid": 0,
+    "id": 0,
+    "traffic": {
+        "dl": 55169409,
+        "ul": 23839234
+    },
+    "type": "shadowsocks",
+    "yc": 0
+}
