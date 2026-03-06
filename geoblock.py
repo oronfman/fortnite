@@ -1,4 +1,5 @@
-import ipaddress, signal, os, time
+import ctypes
+import ipaddress, signal, os, time, sys
 from datetime import datetime, timedelta
 import geoip2.database
 from pydivert import WinDivert
@@ -14,6 +15,13 @@ MIN_DST_PORT = 15000  # Only monitor destination ports above this value
 MAX_DST_PORT = 15999  # Only monitor destination ports below this value
 
 
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+    
+    
 def is_local_ip(ip):
     try:
         o = ipaddress.ip_address(ip)
@@ -164,4 +172,10 @@ def block_countries_for_process():
 
 
 if __name__ == '__main__':
+    if not is_admin():
+        # Re-launch the script with UAC elevation prompt
+        ctypes.windll.shell32.ShellExecuteW(
+            None, "runas", sys.executable, " ".join(sys.argv), None, 1
+        )
+        sys.exit(0)
     block_countries_for_process()
