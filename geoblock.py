@@ -8,7 +8,7 @@ from urllib.request import urlretrieve
 RUNNING = True
 CURRENT_DIVERT = None
 
-_BLOCK_COUNTRIES = {"GB", "DE"}  # ISO country codes to block
+_BLOCK_COUNTRIES = {"GB"}  # ISO country codes to block
 _IP_COUNTRY_CACHE = {}
 GEOIP_DB_FILE = 'GeoLite2-Country.mmdb'
 MIN_DST_PORT = 15000  # Only monitor destination ports above this value
