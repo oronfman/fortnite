@@ -1,0 +1,17 @@
+ /queue type add name=cake-upload kind=cake \
+   cake-flowmode=dual-srchost cake-nat=yes \
+   cake-overhead=34 cake-mpu=84 \
+   cake-diffserv=diffserv4 cake-ack-filter=filter
+
+ /queue type add name=cake-download kind=cake \
+   cake-flowmode=dual-dsthost cake-nat=yes \
+   cake-overhead=34 cake-mpu=84 \
+   cake-diffserv=diffserv4
+
+ /queue tree add name=upload parent=pppoe-out1 \
+   queue=cake-upload max-limit=90M \
+   packet-mark=no-mark bucket-size=0.01
+
+ /queue tree add name=download parent=bridge \
+   queue=cake-download max-limit=900M \
+   packet-mark=no-mark bucket-size=0.01
