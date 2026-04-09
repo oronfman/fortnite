@@ -11,8 +11,6 @@ CURRENT_DIVERT = None
 _BLOCK_COUNTRIES = {"GB"}  # ISO country codes to block
 _IP_COUNTRY_CACHE = {}
 GEOIP_DB_FILE = 'GeoLite2-Country.mmdb'
-MIN_DST_PORT = 15000  # Only monitor destination ports above this value
-MAX_DST_PORT = 15999  # Only monitor destination ports below this value
 
 
 def is_admin():
@@ -113,14 +111,14 @@ signal.signal(signal.SIGINT, _signal_stop)
 
 
 def block_countries_for_process():
-    """Intercept outbound IP packets and drop those whose destination country is blocked for destination ports > MIN_DST_PORT."""
+    """Intercept UDP both directions and drop traffic to/from blocked countries."""
     global CURRENT_DIVERT
     print("🌍 Starting GeoBlock...")
-    print(f"📡 Monitoring outbound traffic on destination ports {MIN_DST_PORT}-{MAX_DST_PORT}")
-    print(f"🚫 Blocking countries: {', '.join(_BLOCK_COUNTRIES)}\n")
+    print(f"🚫 Blocking countries: {', '.join(_BLOCK_COUNTRIES)}")
+    print(f"📡 Corrupting INBOUND UDP from blocked countries\n")
 
     try:
-        with WinDivert("outbound and ip") as w:
+        with WinDivert("inbound and udp") as w:
             CURRENT_DIVERT = w
             try:
                 for pkt in w:
@@ -130,26 +128,24 @@ def block_countries_for_process():
                     if pkt is None:
                         continue
                     try:
-                        dst = getattr(pkt, 'dst_addr', None)
+                        src = getattr(pkt, 'src_addr', None)
+                        src_port = getattr(pkt, 'src_port', None)
 
-                        if is_local_ip(dst):
+                        # Always allow DNS responses (port 53)
+                        if src_port == 53:
                             w.send(pkt)
                             continue
 
-                        dst_port = getattr(pkt, 'dst_port', None)
+                        if src and not is_local_ip(src):
+                            country = get_ip_country(src)
+                            if country and country.upper() in _BLOCK_COUNTRIES:
+                                # Scramble the UDP payload with random bytes
+                                if pkt.payload and len(pkt.payload) > 0:
+                                    pkt.payload = os.urandom(len(pkt.payload))
+                                print(f"💥 CORRUPT  {src}:{src_port} [{country}]")
+                            # else:
+                            #     print(f"✓ Allowed  {src}:{src_port} [{country}]")
 
-                        # Check if destination port is within the monitored range
-                        if dst_port is None or dst_port <= MIN_DST_PORT or dst_port > MAX_DST_PORT:
-                            w.send(pkt)
-                            continue
-
-                        country = get_ip_country(dst) or 'Unknown'
-                        if country and country.upper() in _BLOCK_COUNTRIES:
-                            print(f"🚫 BLOCKED  {dst}:{dst_port} [{country}]")
-                            # Drop by not reinjecting
-                            continue
-                        # Otherwise reinject
-                        print(f"✓ Allowed  {dst}:{dst_port} [{country}]")
                         w.send(pkt)
                     except Exception as e:
                         # During shutdown the handle may become invalid; if stopping, break
