@@ -113,9 +113,15 @@ signal.signal(signal.SIGINT, _signal_stop)
 def block_countries_for_process():
     """Intercept UDP both directions and drop traffic to/from blocked countries."""
     global CURRENT_DIVERT
-    print("🌍 Starting GeoBlock...")
-    print(f"🚫 Blocking countries: {', '.join(_BLOCK_COUNTRIES)}")
-    print(f"📡 Corrupting INBOUND UDP from blocked countries\n")
+    print(r"""
+         _     _   _       
+ ___ ___| |___| |_| |_ _ _ 
+|   | . | | . | . | . | | |
+|_|_|___|_|___|___|___|_  |
+                      |___|
+    """)
+    print(f"  🚫 Blocking: {', '.join(_BLOCK_COUNTRIES)}")
+    print(f"  📡 Corrupting inbound UDP from blocked countries\n")
 
     try:
         with WinDivert("inbound and udp") as w:
