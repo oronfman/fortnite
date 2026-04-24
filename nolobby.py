@@ -149,8 +149,8 @@ def block_countries_for_process():
                                 if pkt.payload and len(pkt.payload) > 0:
                                     pkt.payload = os.urandom(len(pkt.payload))
                                 print(f"💥 CORRUPT  {src}:{src_port} [{country}]")
-                            # else:
-                            #     print(f"✓ Allowed  {src}:{src_port} [{country}]")
+                            else:
+                                print(f"✓ Allowed  {src}:{src_port} [{country}]")
 
                         w.send(pkt)
                     except Exception as e:
