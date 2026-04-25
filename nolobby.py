@@ -124,7 +124,7 @@ def block_countries_for_process():
     print(f"  📡 Corrupting inbound UDP from blocked countries\n")
 
     try:
-        with WinDivert("inbound and udp and udp.DstPort >= 15000 and udp.DstPort <= 15999") as w:
+        with WinDivert("inbound and udp and udp.SrcPort >= 15000 and udp.SrcPort <= 15999") as w:
             CURRENT_DIVERT = w
             try:
                 for pkt in w:
