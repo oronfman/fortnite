@@ -1,5 +1,5 @@
 import ctypes
-import ipaddress, signal, os, time, sys
+import ipaddress, signal, os, sys
 from datetime import datetime, timedelta
 import geoip2.database
 from pydivert import WinDivert
@@ -8,7 +8,7 @@ from urllib.request import urlretrieve
 RUNNING = True
 CURRENT_DIVERT = None
 
-_BLOCK_COUNTRIES = {"GB"}  # ISO country codes to block
+_ALLOW_COUNTRIES = {"FR", "DE"}  # ISO country codes to allow (block all others)
 _IP_COUNTRY_CACHE = {}
 GEOIP_DB_FILE = 'GeoLite2-Country.mmdb'
 
@@ -111,17 +111,17 @@ signal.signal(signal.SIGINT, _signal_stop)
 
 
 def block_countries_for_process():
-    """Intercept UDP both directions and drop traffic to/from blocked countries."""
+    """Intercept UDP both directions and drop traffic from non-allowed countries."""
     global CURRENT_DIVERT
     print(r"""
          _     _   _       
  ___ ___| |___| |_| |_ _ _ 
 |   | . | | . | . | . | | |
-|_|_|___|_|___|___|___|_  |
+|_|_|___|_|___|_|___|___|_  |
                       |___|
     """)
-    print(f"  🚫 Blocking: {', '.join(_BLOCK_COUNTRIES)}")
-    print(f"  📡 Corrupting inbound UDP from blocked countries\n")
+    print(f"  ✓ Allowing: {', '.join(_ALLOW_COUNTRIES)}")
+    print(f"  📡 Corrupting inbound UDP from non-allowed countries\n")
 
     try:
         with WinDivert("inbound and udp and udp.SrcPort >= 15000 and udp.SrcPort <= 15999") as w:
@@ -144,7 +144,7 @@ def block_countries_for_process():
 
                         if src and not is_local_ip(src):
                             country = get_ip_country(src)
-                            if country and country.upper() in _BLOCK_COUNTRIES:
+                            if country and country.upper() not in _ALLOW_COUNTRIES:
                                 # Scramble the UDP payload with random bytes
                                 if pkt.payload and len(pkt.payload) > 0:
                                     pkt.payload = os.urandom(len(pkt.payload))
@@ -162,6 +162,8 @@ def block_countries_for_process():
                             w.send(pkt)
                         except Exception:
                             pass
+            except KeyboardInterrupt:
+                print("\n👋 Interrupted by user, shutting down...")
             except Exception as e:
                 # recv/iterator error - suppress during shutdown
                 if RUNNING:
